@@ -23,8 +23,9 @@ Uma vulnerabilidade de segurança crítica foi identificada no mecanismo de aute
 O modelo de usuário e o serviço de autenticação da aplicação não implementam um algoritmo seguro de hash de senha de mão única (como bcrypt, Argon2 ou Scrypt). Em vez disso, o sistema se baseia em uma comparação direta de strings contra um valor armazenado rotulado como `senhaHash`, que é funcionalmente uma senha em texto simples.
 
 - **Severidade:** Crítica
-- **OWASP Top 10 2021:** A02: Falhas Criptográficas
+- **OWASP Top 10 2021:** A02:2021 - Falhas Criptográficas
 - **CWE:** CWE-257: Armazenamento de Senhas em Formato Recuperável
+- **CVSS v3.1:** 9.8 (Crítica)
 
 ### 2.1. Componentes Afetados
 
@@ -71,7 +72,7 @@ O armazenamento inseguro de senhas leva aos seguintes riscos de alto impacto:
 
 - **Comprometimento Total de Credenciais:** Qualquer invasor que obtenha acesso ao banco de dados da aplicação (por exemplo, através de um ataque bem-sucedido de Injeção SQL, uma configuração incorreta de backup ou um servidor comprometido) obterá imediatamente todas as senhas de usuário em texto simples.
 - **Movimentação Lateral/Tomada de Conta:** Como muitos usuários reutilizam senhas em diferentes serviços, as credenciais comprometidas podem ser usadas para assumir contas em outras plataformas (por exemplo, e-mail, banco, mídia social).
-- **Dano Reputacional:** Uma violação de dados envolvendo senhas em texto simples resulta em perda significativa de confiança do usuário e penalidades regulatórias severas sob as leis de proteção de dados.
+- **Dano Reputacional:** Uma violação de dados envolvendo senhas em texto simples resulta em perda significativa de confiança do usuário e penalidades regulatórias severas sob as leis de proteção de dados (LGPD, GDPR).
 
 ## 4. Remediação
 
@@ -79,17 +80,40 @@ As seguintes etapas são obrigatórias para proteger o processo de autenticaçã
 
 ### 4.1. Ação Imediata: Implementar Hash Forte
 
-A aplicação deve ser refatorada para usar uma biblioteca moderna e padrão da indústria para hash de senha. Para uma aplicação Spring Boot, a abordagem recomendada é utilizar a interface `PasswordEncoder` do Spring Security, especificamente o `BCryptPasswordEncoder` ou uma implementação forte similar.
+A aplicação deve ser refatorada para usar uma biblioteca moderna e padrão da indústria para hash de senha. Para uma aplicação Spring Boot, a abordagem recomendada é utilizar a interface `PasswordEncoder` do Spring Security, especificamente o `BCryptPasswordEncoder` (com fator de custo mínimo de 12) ou `Argon2PasswordEncoder` para segurança máxima.
 
 **Etapas:**
 
 1. **Adicionar Dependência do Spring Security:** Garantir que a dependência necessária do Spring Security esteja incluída no `pom.xml`.
+
+   ```xml
+   <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-starter-security</artifactId>
+   </dependency>
+   ```
+
 2. **Configurar PasswordEncoder:** Definir um bean `BCryptPasswordEncoder` em uma classe de configuração.
+
+   ```java
+   @Configuration
+   public class SecurityConfig {
+       @Bean
+       public PasswordEncoder passwordEncoder() {
+           return new BCryptPasswordEncoder(12); // Fator de custo 12
+       }
+   }
+   ```
+
 3. **Atualizar Modelo de Usuário:** Remover o método `autenticar` de `Usuario.java`, pois a lógica de comparação será movida para a camada de serviço.
+
 4. **Atualizar Criação de Usuário:** Ao criar novos usuários (por exemplo, em `DataLoader` ou um endpoint de registro), a senha **DEVE** ser hasheada antes de ser salva no banco de dados.
 
    ```java
    // Exemplo: Hash da senha antes de salvar
+   @Autowired
+   private PasswordEncoder passwordEncoder;
+   
    String rawPassword = "123";
    String hashedPassword = passwordEncoder.encode(rawPassword);
    usuarioRepository.save(new Administrador("...", "...", hashedPassword));
@@ -99,6 +123,9 @@ A aplicação deve ser refatorada para usar uma biblioteca moderna e padrão da 
 
    ```java
    // Exemplo: Lógica de autenticação segura em ClinicaService
+   @Autowired
+   private PasswordEncoder passwordEncoder;
+   
    public Optional<Usuario> autenticarUsuario(String email, String senha) {
        return usuarioRepository.findByEmail(email)
                .filter(u -> passwordEncoder.matches(senha, u.getSenhaHash()));
@@ -109,9 +136,24 @@ A aplicação deve ser refatorada para usar uma biblioteca moderna e padrão da 
 
 Para qualquer ambiente de produção, um plano deve ser executado para migrar as senhas existentes em texto simples para o novo formato hasheado. Isso geralmente envolve:
 
-- Forçar todos os usuários existentes a redefinir suas senhas no próximo login.
-- Durante o processo de redefinição de senha, a nova senha é salva usando o algoritmo de hash forte.
+- Forçar todos os usuários existentes a redefinir suas senhas no próximo login através de um fluxo de recuperação de senha.
+- Durante o processo de redefinição de senha, a nova senha é hasheada usando o algoritmo forte e salva no banco de dados.
+- Implementar rotação periódica de senhas e políticas de complexidade de senha em conformidade com as melhores práticas de segurança.
 
 ## 5. Conclusão
 
-O projeto `clinica-api-final-2` fornece uma valiosa estrutura educacional para POO e RBAC. No entanto, o armazenamento de senha em texto simples representa uma falha de segurança crítica que deve ser abordada imediatamente para garantir a integridade e confidencialidade dos dados do usuário. A implementação de um mecanismo robusto de hash de senha é a melhoria de segurança mais importante para esta aplicação.
+O projeto `clinica-api-final-2` fornece uma valiosa estrutura educacional para POO e RBAC. No entanto, o armazenamento de senha em texto simples representa uma falha de segurança crítica que deve ser abordada imediatamente para garantir a integridade e confidencialidade dos dados do usuário. A implementação de um mecanismo robusto de hash de senha usando BCrypt ou Argon2 é a melhoria de segurança mais importante para esta aplicação.
+
+---
+
+## Referências
+
+[1] OWASP Foundation. (2021). *OWASP Top 10 - 2021*. Disponível em: https://owasp.org/www-project-top-ten/
+
+[2] MITRE Corporation. (2023). *Common Weakness Enumeration (CWE)*. Disponível em: https://cwe.mitre.org/
+
+[3] FIRST. (2023). *Common Vulnerability Scoring System (CVSS) v3.1*. Disponível em: https://www.first.org/cvss/v3.1/
+
+[4] Spring Framework. (2024). *Spring Security Reference Documentation*. Disponível em: https://docs.spring.io/spring-security/reference/index.html
+
+[5] NIST. (2017). *Digital Identity Guidelines - Authentication and Lifecycle Management (SP 800-63B)*. Disponível em: https://pages.nist.gov/800-63-3/sp800-63b.html
