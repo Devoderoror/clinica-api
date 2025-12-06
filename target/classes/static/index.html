@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão Clínica - Demo</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 30px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .nav-link.active {
+            font-weight: bold;
+        }
+        .result-box {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .success {
+            color: #198754;
+            font-weight: bold;
+        }
+        .btn-custom {
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4 text-primary">Sistema de Gestão Clínica</h1>
+        <p class="text-center text-muted">Interface de demonstração da API REST em Spring Boot.</p>
+
+        <!-- Variáveis de Estado (Simulação de Login) -->
+        <script>
+            let clienteId = null;
+            let administradorId = null;
+            let pacienteId = null;
+            let sessaoId = null;
+        </script>
+
+        <!-- Navegação por Abas -->
+        <ul class="nav nav-tabs" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab" aria-controls="login" aria-selected="true">1. Login</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="paciente-tab" data-bs-toggle="tab" data-bs-target="#paciente" type="button" role="tab" aria-controls="paciente" aria-selected="false">2. Cliente</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="sessao-tab" data-bs-toggle="tab" data-bs-target="#sessao" type="button" role="tab" aria-controls="sessao" aria-selected="false">3. Sessão</button>
+            </li>
+        </ul>
+
+        <!-- Conteúdo das Abas -->
+        <div class="tab-content p-3 border border-top-0 bg-white" id="myTabContent">
+            
+            <!-- Aba 1: Login -->
+            <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
+                <h2 class="mb-3">Autenticação</h2>
+                <p class="alert alert-info">Usuários de teste: <strong>aluno@clinica.com</strong> / 123 (Cliente) | <strong>prof@clinica.com</strong> / 123 (Administrador)</p>
+                
+                <div class="d-flex mb-3">
+                    <button class="btn btn-success btn-custom" onclick="autenticar('aluno@clinica.com', '123', 'cliente')">Login Cliente</button>
+                    <button class="btn btn-danger btn-custom" onclick="autenticar('prof@clinica.com', '123', 'administrador')">Login Administrador</button>
+                </div>
+
+                <p class="mb-1">Status: <span id="authStatus" class="badge bg-secondary">Deslogado</span></p>
+                <p class="mb-1">ID Cliente Logado: <span id="clienteIdDisplay" class="badge bg-primary">N/A</span></p>
+                <p>ID Administrador Logado: <span id="administradorIdDisplay" class="badge bg-danger">N/A</span></p>
+                
+                <h5 class="mt-4">Resultado da API:</h5>
+                <div id="authResult" class="result-box"></div>
+            </div>
+
+            <!-- Aba 2: Paciente -->
+            <div class="tab-pane fade" id="paciente" role="tabpanel" aria-labelledby="paciente-tab">
+                <h2 class="mb-3">Cadastro de Paciente</h2>
+                <p class="text-muted">O cadastro gera dados únicos (Nome e CPF) para evitar erros de duplicidade.</p>
+                
+                <button class="btn btn-primary btn-custom" onclick="cadastrarPaciente()">Cadastrar Novo Paciente</button>
+                
+                <p class="mt-3 mb-1">Paciente ID Cadastrado: <span id="pacienteIdDisplay" class="badge bg-warning text-dark">N/A</span></p>
+                
+                <h5 class="mt-4">Resultado da API:</h5>
+                <div id="pacienteResult" class="result-box"></div>
+            </div>
+
+            <!-- Aba 3: Sessão -->
+            <div class="tab-pane fade" id="sessao" role="tabpanel" aria-labelledby="sessao-tab">
+                <h2 class="mb-3">Gestão de Sessão Clínica</h2>
+                
+                <!-- Criação de Sessão -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">3.1 Criar Sessão</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Requer Paciente cadastrado e Cliente logado.</p>
+                        <button class="btn btn-info btn-custom" onclick="criarSessao()">Criar Sessão (Avaliação Inicial)</button>
+                        <p class="mt-3 mb-1">Sessão ID Criada: <span id="sessaoIdDisplay" class="badge bg-info text-dark">N/A</span></p>
+                        <div id="sessaoResult" class="result-box mt-3"></div>
+                    </div>
+                </div>
+
+                <!-- Registro de Evolução -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">3.2 Registrar Evolução</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Requer Sessão criada e Cliente logado.</p>
+                        <button class="btn btn-success btn-custom" onclick="registrarEvolucao()">Registrar Evolução (Cliente)</button>
+                        <div id="evolucaoResult" class="result-box mt-3"></div>
+                    </div>
+                </div>
+
+                <!-- Assinatura de Sessão -->
+                <div class="card mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">3.3 Assinatura de Sessão</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Requer Sessão criada e Administrador logado.</p>
+                        <button class="btn btn-danger btn-custom" onclick="assinarSessao()">Assinar Sessão (Administrador)</button>
+                        <div id="assinaturaResult" class="result-box mt-3"></div>
+                    </div>
+                </div>
+
+                <!-- Listar Evoluções -->
+                <div class="card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">3.4 Listar Evoluções</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Lista todas as evoluções registradas para a sessão atual.</p>
+                        <button class="btn btn-secondary btn-custom" onclick="listarEvolucoes()">Listar Evoluções da Sessão</button>
+                        <div id="listaEvolucoesResult" class="result-box mt-3"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Script JS -->
+        <script>
+            const API_BASE = '/api';
+
+            // Função auxiliar para chamadas à API
+            async function callApi(endpoint, method = 'GET', body = null) {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                };
+                if (body) {
+                    options.body = JSON.stringify(body);
+                }
+
+                try {
+                    const response = await fetch(API_BASE + endpoint, options);
+                    let data = null;
+                    try {
+                        data = await response.json();
+                    } catch (e) {
+                        // Ignora erro de JSON vazio
+                    }
+                    if (!response.ok) {
+                        let errorMessage = data ? (data.message || `Erro HTTP: ${response.status}`) : `Erro HTTP: ${response.status}`;
+                        if (response.status === 400 && errorMessage.includes("ConstraintViolationException")) {
+                            errorMessage = "CPF duplicado. Paciente já cadastrado.";
+                        }
+                        throw new Error(errorMessage);
+                    }
+                    return data;
+                } catch (error) {
+                    console.error('Erro na API:', error);
+                    return { error: error.message };
+                }
+            }
+
+            // 1. Autenticação
+            async function autenticar(email, senha, tipo) {
+                const resultElement = document.getElementById('authResult');
+                const statusElement = document.getElementById('authStatus');
+                const clienteIdDisplay = document.getElementById('clienteIdDisplay');
+                const administradorIdDisplay = document.getElementById('administradorIdDisplay');
+                
+                resultElement.textContent = 'Autenticando...';
+                statusElement.textContent = '...';
+                statusElement.className = 'badge bg-warning';
+
+                const data = await callApi('/usuarios/autenticar', 'POST', { email, senha });
+
+                if (data.error) {
+                    resultElement.textContent = `Erro: ${data.error}`;
+                    statusElement.textContent = 'Falha na Autenticação';
+                    statusElement.className = 'badge bg-danger';
+                    clienteId = null;
+                    administradorId = null;
+                    clienteIdDisplay.textContent = 'N/A';
+                    administradorIdDisplay.textContent = 'N/A';
+                } else {
+                    resultElement.textContent = JSON.stringify(data, null, 2);
+                    statusElement.textContent = `Logado como ${data.nome} (${data.papel})`;
+                    statusElement.className = 'badge bg-success';
+
+                    if (tipo === 'cliente') {
+                        clienteId = data.id;
+                        administradorId = null;
+                        clienteIdDisplay.textContent = clienteId;
+                        administradorIdDisplay.textContent = 'N/A';
+                    } else if (tipo === 'administrador') {
+                        administradorId = data.id;
+                        clienteId = null;
+                        administradorIdDisplay.textContent = administradorId;
+                        clienteIdDisplay.textContent = 'N/A';
+                    }
+                }
+            }
+
+            // Função para gerar CPF único (simulação)
+            function gerarCpfUnico() {
+                let cpf = '';
+                for (let i = 0; i < 11; i++) {
+                    cpf += Math.floor(Math.random() * 10);
+                }
+                return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+            }
+
+            // 2. Cadastro de Paciente
+            async function cadastrarPaciente() {
+                const resultElement = document.getElementById('pacienteResult');
+                const pacienteIdDisplay = document.getElementById('pacienteIdDisplay');
+                resultElement.textContent = 'Cadastrando...';
+                pacienteIdDisplay.textContent = '...';
+
+                const cpfUnico = gerarCpfUnico();
+                const nomeUnico = "Paciente Teste " + cpfUnico.substring(0, 3);
+
+                const data = await callApi('/pacientes', 'POST', {
+                    nome: nomeUnico,
+                    cpf: cpfUnico,
+                    dataNascimento: "1990-01-01T00:00:00.000Z",
+                    telefone: "(11) 98765-4321",
+                    endereco: "Rua Exemplo, 123"
+                });
+
+                if (data.error) {
+                    resultElement.textContent = `Erro: ${data.error}`;
+                    pacienteIdDisplay.textContent = 'Falha';
+                } else {
+                    pacienteId = data.id;
+                    pacienteIdDisplay.textContent = pacienteId;
+                    resultElement.textContent = JSON.stringify(data, null, 2);
+                }
+            }
+
+            // 3.1 Criação de Sessão
+            async function criarSessao() {
+                const resultElement = document.getElementById('sessaoResult');
+                const sessaoIdDisplay = document.getElementById('sessaoIdDisplay');
+                resultElement.textContent = 'Criando sessão...';
+                sessaoIdDisplay.textContent = '...';
+
+                if (!pacienteId) {
+                    resultElement.textContent = 'Erro: Cadastre um paciente primeiro.';
+                    return;
+                }
+                if (!clienteId) {
+                    resultElement.textContent = 'Erro: Faça login como Cliente primeiro.';
+                    return;
+                }
+
+                const data = await callApi('/sessoes', 'POST', {
+                    pacienteId: pacienteId,
+                    alunoId: clienteId,
+                    tipo: "Avaliação Inicial"
+                });
+
+                if (data.error) {
+                    resultElement.textContent = `Erro: ${data.error}`;
+                    sessaoIdDisplay.textContent = 'Falha';
+                } else {
+                    sessaoId = data.id;
+                    sessaoIdDisplay.textContent = sessaoId;
+                    resultElement.textContent = JSON.stringify(data, null, 2);
+                }
+            }
+
+            // 3.2 Registro de Evolução
+            async function registrarEvolucao() {
+                const resultElement = document.getElementById('evolucaoResult');
+                resultElement.textContent = 'Registrando evolução...';
+
+                if (!sessaoId) {
+                    resultElement.textContent = 'Erro: Crie uma sessão primeiro.';
+                    return;
+                }
+                if (!clienteId) {
+                    resultElement.textContent = 'Erro: Faça login como Cliente primeiro.';
+                    return;
+                }
+
+                const data = await callApi(`/sessoes/${sessaoId}/evolucoes`, 'POST', {
+                    texto: "Paciente demonstrou boa comunicação inicial. (Registrado por Cliente)",
+                    autorId: clienteId
+                });
+
+                if (data.error) {
+                    resultElement.textContent = `Erro: ${data.error}`;
+                } else {
+                    resultElement.textContent = JSON.stringify(data, null, 2);
+                }
+            }
+
+            // 3.3 Assinatura de Sessão
+            async function assinarSessao() {
+                const resultElement = document.getElementById('assinaturaResult');
+                resultElement.textContent = 'Assinando sessão...';
+
+                if (!sessaoId) {
+                    resultElement.textContent = 'Erro: Crie uma sessão primeiro.';
+                    return;
+                }
+                if (!administradorId) {
+                    resultElement.textContent = 'Erro: Faça login como Administrador primeiro.';
+                    return;
+                }
+
+                const data = await callApi(`/sessoes/${sessaoId}/assinar?administradorId=${administradorId}`, 'POST');
+
+                if (data.error) {
+                    resultElement.textContent = `Erro: ${data.error}`;
+                } else {
+                    resultElement.textContent = JSON.stringify(data, null, 2);
+                }
+            }
+
+            // 3.4 Listar Evoluções
+            async function listarEvolucoes() {
+                const resultElement = document.getElementById('listaEvolucoesResult');
+                resultElement.textContent = 'Listando evoluções...';
+
+                if (!sessaoId) {
+                    resultElement.textContent = 'Erro: Crie uma sessão primeiro.';
+                    return;
+                }
+
+                const data = await callApi(`/sessoes/${sessaoId}/evolucoes`, 'GET');
+
+                if (data.error) {
+                    resultElement.textContent = `Erro: ${data.error}`;
+                } else {
+                    resultElement.textContent = JSON.stringify(data, null, 2);
+                }
+            }
+        </script>
+
+    </div>
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
