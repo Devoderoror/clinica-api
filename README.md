@@ -4,13 +4,13 @@
 
 O **Sistema de Gestão Clínica** é uma API RESTful desenvolvida em Spring Boot, projetada para gerenciar o fluxo de atendimento e supervisão em uma clínica de saúde. O sistema é focado em registrar pacientes, criar sessões de atendimento, registrar a evolução do paciente durante as sessões e garantir a supervisão obrigatória por um administrador. Ele serve como o *back-end* central para uma aplicação que precisa de autenticação de usuários (Clientes e Administradores) e persistência de dados de atendimento.
 
-Projeto de Segurança - Relatório de Vulnerabilidade de Segurança
+# Projeto de Segurança - Relatório de Vulnerabilidade de Segurança
 
-[[https://github.com/Devoderoror/clinica-api/blob/main/SEGURANCA.md](https://github.com/Devoderoror/clinica-api/blob/main/SEGURANCA.md)
-](https://github.com/Devoderoror/clinica-api/blob/main/SEGURANCA.md)
-Resumo de Segurança e Vulnerabilidades - Sumário Executivo
+Disponível em: https://github.com/Devoderoror/clinica-api/blob/main/SEGURANCA.md
 
-https://github.com/Devoderoror/web-app/blob/main/RESUMO_SEGURANCA.md
+# Resumo de Segurança e Vulnerabilidades - Sumário Executivo
+
+Disponível em: https://github.com/Devoderoror/web-app/blob/main/RESUMO_SEGURANCA.md
 
 ## 🚀 Tecnologias Utilizadas
 
